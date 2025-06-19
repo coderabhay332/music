@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
@@ -62,11 +62,32 @@ const Index = () => {
     "This bottle has one last message: coffee this weekend? The ocean insists. 🌊💙"
   ];
 
+  // Helper to shuffle an array (Fisher-Yates)
+  function shuffleArray(array: string[]) {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  // Store the shuffled deck and current index in refs so they persist across renders but don't trigger rerenders
+  const shuffledDeckRef = useRef<string[]>(shuffleArray(messages));
+  const deckIndexRef = useRef<number>(0);
+
   const handleBottleClick = () => {
+    // If we've shown all messages, reshuffle and start over
+    if (deckIndexRef.current >= messages.length) {
+      shuffledDeckRef.current = shuffleArray(messages);
+      deckIndexRef.current = 0;
+    }
+    const nextMessage = shuffledDeckRef.current[deckIndexRef.current];
+    deckIndexRef.current += 1;
+
     if (!isBottleOpened) {
       // First click - open bottle and show first message
-      const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-      setCurrentMessage(randomMessage);
+      setCurrentMessage(nextMessage);
       setIsBottleOpened(true);
       setTimeout(() => {
         setShowMessage(true);
@@ -76,10 +97,9 @@ const Index = () => {
       // Subsequent clicks - show new message
       setShowMessage(false);
       setTimeout(() => {
-        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
-        setCurrentMessage(randomMessage);
+        setCurrentMessage(nextMessage);
         setShowMessage(true);
-        setMessageCount(prev => prev + 1);
+        setMessageCount(prev => (deckIndexRef.current));
       }, 300);
     }
   };
